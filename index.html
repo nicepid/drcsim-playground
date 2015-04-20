@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="drcsim-playground : Playing around with DRCSim and ROS">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>drcsim-playground</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/nicepid/drcsim-playground">View on GitHub</a>
+
+          <h1 id="project_title">drcsim-playground</h1>
+          <h2 id="project_tagline">Playing around with DRCSim and ROS</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/nicepid/drcsim-playground/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/nicepid/drcsim-playground/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="session-001---setup" class="anchor" href="#session-001---setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Session 001 - Setup</h1>
+
+<h2>
+<a id="basics" class="anchor" href="#basics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Basics</h2>
+
+<p>First we're going to install a few basic packages of general utility for development.</p>
+
+<pre><code>sudo apt-get install -y \
+        build-essential \
+        pkg-config      \
+        debhelper       \
+        cmake           \
+        mercurial       \
+        git
+</code></pre>
+
+<p>Next, here's something I only started doing recently, because anything locally installed from source is usually a huge pain - this lets us install a library <code>foo</code> to <code>~/local/foo</code> and have it added to all the relevant paths instead of dumping it together with other libraries in a catch-all folder somewhere. Just add this at the end of your <code>~/.bashrc</code> using your favourite editor.</p>
+
+<pre><code># If glob result is empty, give empty result instead of the literal glob
+shopt -s nullglob
+
+# Add subdirectories of any folder in '~/local' to paths
+for dir in $HOME/local/*/; do
+  export PATH="${dir}bin:$PATH"
+  export LD_LIBRARY_PATH="${dir}lib:${dir}lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+  export PKG_CONFIG_PATH="${dir}lib/pkgconfig:${dir}lib/x86_64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH"
+done
+
+# Restore behaviour, so tab-complete works
+shopt -u nullglob
+</code></pre>
+
+<p>And let's make the directory itself too:</p>
+
+<pre><code>mkdir -p ~/src
+</code></pre>
+
+<h2>
+<a id="installing-gazebo" class="anchor" href="#installing-gazebo" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing Gazebo</h2>
+
+<p>Gazebo is a an extendable robot simulator that DRCSim is build on top of - actually DRCSim is mostly a lot of assets and plugins for Gazebo.</p>
+
+<h3>
+<a id="prerequisites" class="anchor" href="#prerequisites" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prerequisites</h3>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">drcsim-playground maintained by <a href="https://github.com/nicepid">nicepid</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
