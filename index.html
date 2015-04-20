@@ -32,12 +32,20 @@
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
         <h1>
-<a id="session-001---setup" class="anchor" href="#session-001---setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Session 001 - Setup</h1>
+<a id="session-1---setup" class="anchor" href="#session-1---setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Session 1 - Setup</h1>
 
 <h2>
 <a id="basics" class="anchor" href="#basics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Basics</h2>
 
-<p>First we're going to install a few basic packages of general utility for development.</p>
+<p>To start with I'm going to assume you're on Ubuntu Desktop 12.04 64-bit - 14.04 should work almost identically if you substitute 'trusty' instead of 'precise' where relevant but I've not tested it.</p>
+
+<p>Make sure you have up-to-date proprietary drivers installed, and if you're running on a Macbook you're on your own but you'll want to make sure you have that NVidia chipset running instead of the Intel one. When we get to the simulated laser scanner, by default it runs CUDA-accelerated which only works on an NVidia card, so if you have a choice of where you're running this pick a machine with one of those in instead of an AMD card.</p>
+
+<p>Apart from that I'm going to be using Gnome 3, Gnome Terminal, and Vim but you can use whatever you prefer instead. Also, make sure to set your terminal to infinite scrollback because 512 lines is just going to fly by. If you're using Gnome Terminal like me you can go to Edit-&gt;Profiles-&gt;Edit-&gt;Scrolling and tick 'Unlimited'.</p>
+
+<p>We're going to be installing some packages from source because DRCSim development moves very fast and this way the versions I'm using will be reproducible for a while.</p>
+
+<p>Okay, first we're going to install a few basic packages of general utility for development.</p>
 
 <pre><code>sudo apt-get install -y \
         build-essential \
@@ -64,18 +72,215 @@ done
 shopt -u nullglob
 </code></pre>
 
-<p>And let's make the directory itself too:</p>
+<p>Let's make the directories we'll be building in and installing to:</p>
 
-<pre><code>mkdir -p ~/src
+<pre><code>mkdir -p ~/local
+mkdir -p ~/src
 </code></pre>
 
 <h2>
 <a id="installing-gazebo" class="anchor" href="#installing-gazebo" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing Gazebo</h2>
 
-<p>Gazebo is a an extendable robot simulator that DRCSim is build on top of - actually DRCSim is mostly a lot of assets and plugins for Gazebo.</p>
+<p>Gazebo is a an extendable robot simulator that DRCSim is build on top of - actually DRCSim is mostly a lot of assets and plugins for Gazebo. As a first step we'll build SDFormat which is a library for reading and writing the Simulation Description Format files used by Gazebo.</p>
 
 <h3>
 <a id="prerequisites" class="anchor" href="#prerequisites" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prerequisites</h3>
+
+<p>These are the prerequisite libraries for building sdformat and gazebo - a few of these might not be strictly necessary but they won't hurt. Gazebo does have other optional dependencies - for example you can use several other physics engines like SimBody and DART, and you can compile in support for the Oculus Rift. If you're interested in those take a look at the guide <a href="http://gazebosim.org/tutorials?tut=install_from_source&amp;ver=4.0&amp;cat=install">here</a>.</p>
+
+<pre><code>sudo apt-get install -y \
+        avr-libc \
+        freeglut3-dev \
+        gcc-avr \
+        libavcodec-dev \
+        libavformat-dev \
+        libboost-all-dev \
+        libboost-dev \
+        libcegui-mk2-dev \
+        libcurl4-openssl-dev \
+        libfreeimage-dev \
+        libgts-dev \
+        libltdl3-dev \
+        libogre-dev \
+        libopenal-dev \
+        libprotobuf-dev \
+        libprotoc-dev \
+        libqt4-dev \
+        libswscale-dev \
+        libtar-dev \
+        libtbb-dev \
+        libtinyxml-dev \
+        libxml2-dev \
+        mesa-utils \
+        playerc++ \
+        protobuf-compiler \
+        xsltproc
+</code></pre>
+
+<h3>
+<a id="sdformat" class="anchor" href="#sdformat" aria-hidden="true"><span class="octicon octicon-link"></span></a>SDFormat</h3>
+
+<p>We're going to request a specific tagged revision of SDFormat and specify an install prefix when we build it. After we install we re-source .bashrc to make the installed paths visible for the next step.</p>
+
+<pre><code>cd ~/src
+hg clone https://bitbucket.org/osrf/sdformat
+cd sdformat
+hg up sdf_2.0
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/local/sdformat
+make -j4 &amp;&amp; make install
+source ~/.bashrc
+</code></pre>
+
+<h3>
+<a id="gazebo" class="anchor" href="#gazebo" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gazebo</h3>
+
+<p>Now for gazebo itself, in much the same way:</p>
+
+<pre><code>cd ~/src
+hg clone https://bitbucket.org/osrf/gazebo
+cd gazebo
+hg up gazebo_4.0
+
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/local/gazebo
+make -j4 &amp;&amp; make install
+source ~/.bashrc
+</code></pre>
+
+<p>Now we can run Gazebo in with an empty world:</p>
+
+<pre><code>source local/gazebo/share/gazebo/setup.sh
+gazebo
+</code></pre>
+
+<h2>
+<a id="installing-ros" class="anchor" href="#installing-ros" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing ROS</h2>
+
+<p>The next big thing to install is ROS, which stands for Robot Operating System although that's actually a misnomer since ROS runs on top of an operating system and provides a distributed framework for launching and communicating between processes, as well as an ecosystem of tools and libraries for robotics. It's even got its own build system, catkin, that we'll meet shortly.</p>
+
+<p>First we'll add the debian repositories from OSRF that will give us all the library and ROS package dependencies we'll need - I'm not building these from source because there are a lot of them and they're more stable than drcsim and gazebo. I'm using ROS hydro here - the latest release is ROS indigo, and again you should be able to make it work with indigo by simple substitution but I've not tested it.</p>
+
+<pre><code>sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" &gt; /etc/apt/sources.list.d/ros-latest.list'
+sudo sh -c 'echo "deb http://packages.osrfoundation.org/drc/ubuntu precise main" &gt; /etc/apt/sources.list.d/drc-latest.list'
+
+wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+wget http://packages.osrfoundation.org/drc.key -O - | sudo apt-key add -
+
+sudo apt-get update
+
+sudo apt-get install -y \
+        ros-hydro-angles \
+        ros-hydro-cmake-modules \
+        ros-hydro-common-msgs \
+        ros-hydro-compressed-depth-image-transport \
+        ros-hydro-compressed-image-transport \
+        ros-hydro-cv-bridge \
+        ros-hydro-driver-base \
+        ros-hydro-dynamic-reconfigure \
+        ros-hydro-geometry \
+        ros-hydro-geometry-experimental \
+        ros-hydro-geometry-msgs \
+        ros-hydro-image-common \
+        ros-hydro-image-pipeline \
+        ros-hydro-image-transport \
+        ros-hydro-image-transport-plugins \
+        ros-hydro-joint-limits-interface \
+        ros-hydro-laser-assembler \
+        ros-hydro-message-generation \
+        ros-hydro-moveit-msgs \
+        ros-hydro-nav-msgs \
+        ros-hydro-nodelet \
+        ros-hydro-opencv2 \
+        ros-hydro-pcl-conversions \
+        ros-hydro-pcl-ros \
+        ros-hydro-polled-camera \
+        ros-hydro-pr2-controllers \
+        ros-hydro-robot-state-publisher \
+        ros-hydro-ros \
+        ros-hydro-ros-comm \
+        ros-hydro-ros-controllers \
+        ros-hydro-rosconsole \
+        ros-hydro-rosgraph-msgs \
+        ros-hydro-sensor-msgs \
+        ros-hydro-std-msgs \
+        ros-hydro-tf \
+        ros-hydro-theora-image-transport \
+        ros-hydro-trajectory-msgs \
+        ros-hydro-transmission-interface \
+        ros-hydro-urdf \
+        ros-hydro-xacro
+</code></pre>
+
+<p>If you get an error saying 'file already exists' running this next command, that's fine. If you get a python error, try: <code>sudo pip install rosdep</code> and then re-run the commands.</p>
+
+<pre><code>sudo rosdep init
+rosdep update
+</code></pre>
+
+<p>We're also going to install some optional tools for managing a workspace with multiple external ROS repositories:</p>
+
+<pre><code>sudo apt-get install python-wstool python-rosinstall
+</code></pre>
+
+<h2>
+<a id="installing-drcsim" class="anchor" href="#installing-drcsim" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing DRCSim</h2>
+
+<p>For now, we're going to manually source our ROS environment.</p>
+
+<pre><code>source /opt/ros/hydro/setup.bash
+</code></pre>
+
+<p>We're going to start working with the catkin build system and related tools. It's build on top of CMake and has some wrapper macros and commands - if you know CMake, the output should look pretty familiar once we start building.</p>
+
+<p>A lot of what catkin does related to ROS packages - packages can be found by name by searching the <code>$ROS_PACKAGE_PATH</code> environment variable, and workspaces contain <code>setup.sh</code> or <code>setup.bash</code> files that set up environment variables including <code>$ROS_PACKAGE_PATH</code>.</p>
+
+<p>We're going to create a new workspace - since we've already sourced the ros hydro setup file, it'll be overlayed on top of the base ros hydro workspace.</p>
+
+<pre><code>source /opt/ros/hydro/setup.bash
+mkdir -p ~/drcsim_ws/src
+cd ~/drcsim_ws/src
+
+catkin_init_workspace
+</code></pre>
+
+<p>Once we build and install some packages, there will be <code>devel/</code>, <code>build/</code> and <code>install/</code> folders alongside the <code>src/</code> in our catkin workspace. <code>build/</code> will contain intermediate files from the build, <code>devel/</code> will contain built targets and <code>install/</code> will only contain targets and files that are explicitly installed.</p>
+
+<p>Now let's add some remote repositories and request specific tagged revisions of each one. The drcsim repo might take a while so be patient.</p>
+
+<pre><code>wstool init
+
+wstool set gazebo_ros_pkgs -y --git https://github.com/ros-simulation/gazebo_ros_pkgs.git --version=2.3.8
+wstool set osrf_common -y --hg https://bitbucket.org/osrf/osrf-common --version=osrf-common_1.1.0
+wstool set sandia_hand -y --hg https://bitbucket.org/osrf/sandia-hand --version=sandia-hand_5.3.0
+wstool set drcsim -y --hg https://bitbucket.org/osrf/drcsim --version=drcsim_4.2.1
+
+wstool update
+</code></pre>
+
+<p>It's finally time to build DRCSim:</p>
+
+<pre><code>cd ..
+
+catkin_make
+
+catkin_make install
+</code></pre>
+
+<p>And now to test, we're going to add the <code>setup.sh</code> for the installed drcsim to our <code>~/.bashrc</code> using our favourite editor. It's probably best to add it <em>before</em> the stuff we added earlier, although it shouldn't matter for the paths we're using right now.</p>
+
+<pre><code>source $HOME/drcsim_ws/install/share/drcsim/setup.sh
+</code></pre>
+
+<p>Now you can finally see Atlas in Gazebo:</p>
+
+<pre><code>source ~/.bashrc
+roslaunch drcsim_gazebo atlas.launch
+</code></pre>
+
+<p>That's all for this first part. Next time we'll look at some of the other tools that ROS provides, and make Atlas move!</p>
       </section>
     </div>
 
